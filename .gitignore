@@ -1,0 +1,31 @@
+# --- Internal Dev Files (Hide from Repo) ---
+SPRINT_TODO.md
+WALKTHROUGH.md
+project_status.md
+docs/internal/
+slot_reference/
+
+# --- Documentation Logic ---
+*.md
+!README.md
+!LICENSE
+!LICENSE.txt
+!BUILD_INSTRUCTIONS.md
+!CHANGELOG.md
+
+# --- OS Junk Files (Mac/Linux/Windows) ---
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Standard
+node_modules
+out
+dist
+.vscode-test
+*.vsix
+.env

@@ -1,0 +1,363 @@
+@import "tailwindcss";
+
+/* ================================================= */
+/* LOCAL FONTS (for VS Code webview sandbox)          */
+/* ================================================= */
+@font-face {
+  font-family: 'VT323';
+  src: url('./fonts/VT323-Regular.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Press Start 2P';
+  src: url('./fonts/PressStart2P-Regular.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ================================================= */
+/* SLOT MACHINE CUSTOM STYLES (from slot_reference)   */
+/* ================================================= */
+
+/* Custom Colors - Tailwind classes via @theme */
+@theme {
+  /* Font overrides - makes Tailwind's .font-mono use VT323 */
+  --font-mono: 'VT323', monospace;
+  --font-sans: 'VT323', monospace;
+  --font-arcade: 'Press Start 2P', cursive;
+  --font-tech: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Neon colors */
+  --color-neon-green: #39ff14;
+  --color-neon-pink: #ff00ff;
+  --color-neon-blue: #00ffff;
+  --color-neon-purple: #b026ff;
+  --color-neon-amber: #ffb300;
+  --color-retro-bg: #050505;
+  --color-retro-panel: #151515;
+  --color-retro-screen: #0a0a10;
+}
+
+:root {
+  font-family: 'VT323', monospace;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #050505;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: #050505;
+}
+
+/* Custom Fonts */
+.font-arcade {
+  font-family: "Press Start 2P", cursive !important;
+}
+
+.font-mono {
+  font-family: "VT323", monospace !important;
+}
+
+.font-sans {
+  font-family: "VT323", monospace !important;
+}
+
+/* ================================================= */
+/* KEYFRAME ANIMATIONS (from slot_reference)          */
+/* ================================================= */
+
+/* Delay Timer - CSS-driven timing for state machine (VS Code unthrottled) */
+@keyframes delayTimer {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+}
+
+.delay-1500ms {
+  animation: delayTimer 1500ms linear forwards;
+}
+
+.delay-1000ms {
+  animation: delayTimer 1000ms linear forwards;
+}
+
+.delay-500ms {
+  animation: delayTimer 500ms linear forwards;
+}
+
+/* Float Up - Score popup animation */
+@keyframes floatUp {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-30px) scale(1.2);
+  }
+}
+
+/* Glow - Neon pulsing effect */
+@keyframes glow {
+  0% {
+    box-shadow: 0 0 5px #39ff14, 0 0 10px #39ff14;
+  }
+
+  100% {
+    box-shadow: 0 0 20px #39ff14, 0 0 30px #39ff14;
+  }
+}
+
+/* Pulse - Standard pulsing (Tailwind default) */
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Spin - Loading spinner */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Animation Classes */
+.animate-float-score {
+  animation: floatUp 2s ease-out forwards;
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+.animate-pulse-fast {
+  animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Text Shadow Glow for Neon Amber */
+.text-shadow-glow {
+  text-shadow: 0 0 10px #ffb300, 0 0 20px #ffb300;
+}
+
+/* Retro Border Style */
+.retro-border {
+  box-shadow:
+    0 0 0 2px #333,
+    0 0 20px rgba(0, 255, 255, 0.1),
+    inset 0 0 20px rgba(0, 0, 0, 0.8);
+}
+
+/* ================================================= */
+/* EXPLICIT COLOR CLASSES (fallback for Tailwind)     */
+/* ================================================= */
+
+/* Background Colors */
+.bg-retro-bg {
+  background-color: #050505;
+}
+
+.bg-retro-panel {
+  background-color: #151515;
+}
+
+.bg-retro-screen {
+  background-color: #0a0a10;
+}
+
+/* Neon Text Colors */
+.text-neon-green {
+  color: #39ff14;
+}
+
+.text-neon-pink {
+  color: #ff00ff;
+}
+
+.text-neon-blue {
+  color: #00ffff;
+}
+
+.text-neon-purple {
+  color: #b026ff;
+}
+
+.text-neon-amber {
+  color: #ffb300;
+}
+
+/* Neon Stroke Colors (for SVG) */
+.stroke-neon-green {
+  stroke: #39ff14;
+}
+
+/* Neon Fill Colors */
+.fill-neon-green {
+  fill: #39ff14;
+}
+
+/* Neon Border Colors */
+.border-neon-green {
+  border-color: #39ff14;
+}
+
+.border-neon-pink {
+  border-color: #ff00ff;
+}
+
+.border-neon-purple {
+  border-color: #b026ff;
+}
+
+/* Border Colors From Template Categories */
+.border-red-600 {
+  border-color: #dc2626;
+}
+
+.border-yellow-400 {
+  border-color: #facc15;
+}
+
+/* Text Colors From Template Categories */
+.text-red-600 {
+  color: #dc2626;
+}
+
+.text-yellow-400 {
+  color: #facc15;
+}
+
+/* ================================================= */
+/* CYBERDECK STYLING (Phase 3: Visual Overhaul)      */
+/* ================================================= */
+
+/* Global Scanline Overlay - applied to body */
+.scanlines::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background:
+    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%),
+    linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+  background-size: 100% 3px, 3px 100%;
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* Subtle grid background */
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(75, 0, 130, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(75, 0, 130, 0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Cyber Chassis - double border metallic look */
+.cyber-chassis {
+  position: relative;
+  border: 2px solid #444;
+  border-radius: 8px;
+  box-shadow:
+    0 0 0 4px #1a1a1a,
+    0 0 0 6px #333,
+    inset 0 0 30px rgba(0, 0, 0, 0.8),
+    0 10px 40px rgba(0, 0, 0, 0.8);
+  background: linear-gradient(180deg, #1a1a1a 0%, #0f0f0f 100%);
+}
+
+.cyber-chassis::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(176, 38, 255, 0.5), transparent);
+}
+
+/* Hero Stat - large glowing display */
+.hero-stat {
+  font-size: 3rem;
+  font-weight: bold;
+  color: #00ffff;
+  text-shadow:
+    0 0 10px #00ffff,
+    0 0 20px #00ffff,
+    0 0 40px rgba(0, 255, 255, 0.5);
+  /* letter-spacing: 0.1em; - Removed for monospace consistency */
+}
+
+.hero-stat-green {
+  font-size: 2.25rem;
+  font-weight: bold;
+  color: #39ff14;
+  text-shadow:
+    0 0 10px #39ff14,
+    0 0 20px #39ff14,
+    0 0 40px rgba(57, 255, 20, 0.5);
+  /* letter-spacing: 0.1em; - Removed for monospace consistency */
+}
+
+/* Connector line between panels */
+.panel-connector {
+  position: relative;
+}
+
+.panel-connector::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  top: 10%;
+  bottom: 10%;
+  width: 4px;
+  background: linear-gradient(180deg,
+      transparent 0%,
+      rgba(176, 38, 255, 0.3) 20%,
+      rgba(176, 38, 255, 0.6) 50%,
+      rgba(176, 38, 255, 0.3) 80%,
+      transparent 100%);
+  border-radius: 2px;
+}

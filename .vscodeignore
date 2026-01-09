@@ -1,0 +1,34 @@
+# Ignore Git internals
+.git/
+.gitignore
+
+# Ignore Build/Source Artifacts
+src/
+tsconfig.json
+package-lock.json
+
+# Ignore Dev Dependencies & Node Modules
+node_modules/
+**/node_modules/
+
+# Ignore Documentation & Scripts
+*.md
+!README.md
+!LICENSE.txt
+!BUILD_INSTRUCTIONS.md
+reset_git.sh
+SECURITY_AUDIT.md
+
+# Ignore Tests
+.vscode-test/
+
+# CRITICAL: Ignore Source Webview (Only keep the built assets)
+webview-ui/src/
+webview-ui/node_modules/
+webview-ui/vite.config.ts
+webview-ui/tsconfig.json
+webview-ui/package.json
+webview-ui/package-lock.json
+
+# CRITICAL: Ignore Legacy Reference
+slot_reference/

@@ -2,7 +2,7 @@
 
 > **Sustainable Vibe Coding for All of Us.**
 
-![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-yellow.svg) ![Version: 0.2.8](https://img.shields.io/badge/Version-0.2.8-purple.svg) [![Reddit](https://img.shields.io/badge/Reddit-r%2Fvibertime-FF4500?logo=reddit)](https://www.reddit.com/r/vibertime/)
+![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-yellow.svg) ![Version: 0.2.10](https://img.shields.io/badge/Version-0.2.10-purple.svg) [![Reddit](https://img.shields.io/badge/Reddit-r%2Fvibertime-FF4500?logo=reddit)](https://www.reddit.com/r/vibertime/)
 
 ---
 

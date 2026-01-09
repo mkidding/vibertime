@@ -609,7 +609,7 @@ export const Dashboard: React.FC<DashboardProps> = (props) => {
                         )}
                     </div>
                     <div className="flex items-center gap-3">
-                        <span onClick={handleDebugTrigger} className="text-xs text-gray-600 font-mono cursor-pointer select-none hover:text-purple-500 transition-colors">v0.2.6</span>
+                        <span onClick={handleDebugTrigger} className="text-xs text-gray-600 font-mono cursor-pointer select-none hover:text-purple-500 transition-colors">v0.2.10</span>
                     </div>
                 </div>
             </footer >

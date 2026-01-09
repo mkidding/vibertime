@@ -1,17 +1,18 @@
 import * as vscode from 'vscode';
 import { Logger } from '../utils/Logger';
 
-interface UpdateData {
-    version: string;
-    description?: string;
+interface GitHubRelease {
+    tag_name: string;
+    html_url: string;
+    name?: string;
 }
 
 export class UpdateManager {
     private static _instance: UpdateManager;
     private _context: vscode.ExtensionContext | undefined;
 
-    // Constant Source
-    private static readonly UPDATE_URL = 'https://raw.githubusercontent.com/mkidding/vibertime/main/latest.json';
+    // GitHub Releases API
+    private static readonly API_URL = 'https://api.github.com/repos/mkidding/vibertime/releases/latest';
     private static readonly RELEASE_URL = 'https://github.com/mkidding/vibertime/releases/latest';
 
     private constructor() { }
@@ -37,18 +38,19 @@ export class UpdateManager {
         Logger.info(`UpdateManager: Checking for updates (Manual: ${isManual})...`);
 
         try {
-            // 1. Fetch using https (safer than fetch for VSCode extensions w/o dom lib)
-            const data = await this.fetchJson<UpdateData>(UpdateManager.UPDATE_URL);
+            // 1. Fetch from GitHub Releases API
+            const release = await this.fetchJson<GitHubRelease>(UpdateManager.API_URL);
 
-            const remoteVersion = data.version;
+            // 2. Clean version (remove 'v' prefix if present)
+            const remoteVersion = release.tag_name.replace(/^v/, '');
             const localVersion = this._context.extension.packageJSON.version;
 
             Logger.info(`UpdateManager: Local v${localVersion} vs Remote v${remoteVersion}`);
 
-            // 2. Compare
+            // 3. Compare
             if (this.isUpdateAvailable(localVersion, remoteVersion)) {
 
-                // 3. Spam Prevention (Auto Mode)
+                // 4. Spam Prevention (Auto Mode)
                 if (!isManual) {
                     const lastNotified = this._context.globalState.get<string>('lastNotifiedVersion');
                     if (lastNotified === remoteVersion) {
@@ -57,42 +59,55 @@ export class UpdateManager {
                     }
                 }
 
-                // 4. Notify
+                // 5. Notify User
                 const action = await vscode.window.showInformationMessage(
-                    `Viber Time Update Available! (v${remoteVersion})`,
-                    'Download'
+                    `Viber Time v${remoteVersion} is available!`,
+                    'Download Update'
                 );
 
                 // Update "Last Notified" immediately to prevent spam if they dismiss
                 await this._context.globalState.update('lastNotifiedVersion', remoteVersion);
 
-                if (action === 'Download') {
+                if (action === 'Download Update') {
                     vscode.env.openExternal(vscode.Uri.parse(UpdateManager.RELEASE_URL));
                 }
 
             } else {
                 // No Update
                 if (isManual) {
-                    vscode.window.showInformationMessage(`You are on the latest version (v${localVersion}).`);
+                    vscode.window.showInformationMessage(`Viber Time is up to date (v${localVersion}).`);
                 }
             }
 
         } catch (error) {
-            // 5. Error Handling
+            // 6. Error Handling
             const msg = error instanceof Error ? error.message : String(error);
             Logger.error(`UpdateManager: Check failed - ${msg}`);
 
             if (isManual) {
                 vscode.window.showErrorMessage(`Update Check Failed: ${msg}`);
             }
-            // Auto checks fail silently
+            // Auto checks fail silently (no annoying popups)
         }
     }
 
     private fetchJson<T>(url: string): Promise<T> {
         return new Promise((resolve, reject) => {
             const https = require('https');
-            const req = https.get(url, { timeout: 5000 }, (res: any) => {
+            const options = {
+                timeout: 5000,
+                headers: {
+                    'User-Agent': 'vibertime-vscode-extension',
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            };
+
+            const req = https.get(url, options, (res: any) => {
+                if (res.statusCode === 404) {
+                    reject(new Error('No releases found'));
+                    res.resume();
+                    return;
+                }
                 if (res.statusCode !== 200) {
                     reject(new Error(`HTTP Status ${res.statusCode}`));
                     res.resume();
@@ -118,13 +133,10 @@ export class UpdateManager {
     }
 
     private isUpdateAvailable(current: string, remote: string): boolean {
-        // Simple semantic version comparison
-        // Assumes format x.y.z
-        // We can use a library or a simple split logic
+        // Semantic version comparison (x.y.z)
         const p1 = current.split('.').map(Number);
         const p2 = remote.split('.').map(Number);
 
-        // Pad if needed (e.g. 0.2 vs 0.2.1)
         const maxLength = Math.max(p1.length, p2.length);
 
         for (let i = 0; i < maxLength; i++) {

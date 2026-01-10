@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { ConfigManager } from '../config/ConfigManager';
 import { Logger } from '../utils/Logger';
+import { ActivityTracker } from './ActivityTracker';
 
 export class NotificationManager {
     private static _instance: NotificationManager;
@@ -162,24 +163,58 @@ export class NotificationManager {
         this._isHardStopActive = true;
         Logger.warn('HARD STOP triggered - Bedtime exceeded!');
         const autoSnooze = ConfigManager.autoSnoozeMinutes;
+        const targetBedtimeMs = this.getTargetBedtimeTimestamp();
 
         vscode.window.showErrorMessage(
             "🛏️ VIBER TIME: BEDTIME EXCEEDED. GO TO SLEEP!",
             { modal: true },
+            "Start New Day ☀️",
             "Snooze 30m",
             "Snooze 1h",
             "Snooze 2h"
         ).then(selection => {
             this._isHardStopActive = false; // Release Lock
 
-            if (selection === "Snooze 30m") {
-                this.snooze(30);
-            } else if (selection === "Snooze 1h") {
-                this.snooze(60);
-            } else if (selection === "Snooze 2h") {
-                this.snooze(120);
-            } else {
-                // User dismissed without selecting - Auto-Snooze per spec
+            // Handle "Start New Day" button click
+            if (selection === "Start New Day ☀️") {
+                this.executeNewDayReset("Rise and grind! ☕ Stats reset.");
+                return;
+            }
+
+            // Handle Snooze button clicks - with guard validation
+            if (selection === "Snooze 30m" || selection === "Snooze 1h" || selection === "Snooze 2h") {
+                const snoozeResult = ActivityTracker.instance.handleSnooze(targetBedtimeMs);
+
+                // CRITICAL: If stale/morning after, reset instead of snoozing
+                if (!snoozeResult.success && snoozeResult.reason === 'STALE_RESET') {
+                    this.executeNewDayReset("Good morning! ☀️ Stats reset for the new day.");
+                    return;
+                }
+
+                // Valid snooze window - proceed
+                if (snoozeResult.success) {
+                    if (selection === "Snooze 30m") {
+                        this.snooze(30);
+                    } else if (selection === "Snooze 1h") {
+                        this.snooze(60);
+                    } else if (selection === "Snooze 2h") {
+                        this.snooze(120);
+                    }
+                    return;
+                }
+
+                // TOO_EARLY case - silently ignore (shouldn't happen normally)
+                Logger.warn('Snooze ignored: TOO_EARLY');
+                return;
+            }
+
+            // User dismissed without selecting - Auto-Snooze per spec (but also check guard)
+            const autoSnoozeResult = ActivityTracker.instance.handleSnooze(targetBedtimeMs);
+            if (!autoSnoozeResult.success && autoSnoozeResult.reason === 'STALE_RESET') {
+                this.executeNewDayReset("Good morning! ☀️ Stats reset for the new day.");
+                return;
+            }
+            if (autoSnoozeResult.success) {
                 Logger.info(`User dismissed - applying auto-snooze of ${autoSnooze} minutes`);
                 this.snooze(autoSnooze);
             }
@@ -187,6 +222,25 @@ export class NotificationManager {
 
         // Open dashboard
         vscode.commands.executeCommand('vibertime.showDashboard');
+    }
+
+    /**
+     * Executes the "New Day" reset: clears stats, hides snooze UI, shows message.
+     */
+    private executeNewDayReset(message: string): void {
+        // Reset all daily stats
+        ActivityTracker.instance.resetForNewDay();
+
+        // Reset notification state (clear snooze)
+        this.reset();
+
+        // Notify webview to hide any snooze-related UI
+        // This is done via command since we don't have direct panel access here
+        vscode.commands.executeCommand('vibertime.hideSnoozeUI');
+
+        // Show friendly message
+        vscode.window.showInformationMessage(message);
+        Logger.info(`New Day Reset executed: ${message}`);
     }
 
     public getTargetBedtimeTimestamp(): number {

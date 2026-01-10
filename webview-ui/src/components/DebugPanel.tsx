@@ -157,6 +157,13 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({ stats, onExit }) => {
                 </div>
 
                 <button
+                    onClick={() => vscode.postMessage({ type: 'resetForNewDay' })}
+                    className="w-full py-1.5 px-3 bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs rounded transition-colors"
+                >
+                    ☀️ Reset New Day
+                </button>
+
+                <button
                     onClick={populateDummyData}
                     className="w-full py-1.5 px-3 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold text-xs rounded border border-gray-700 flex items-center justify-center gap-2"
                 >

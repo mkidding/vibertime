@@ -166,6 +166,65 @@ export class ActivityTracker {
         Logger.info('Populated dummy activity data');
     }
 
+    // =====================================================
+    // MORNING AFTER DEFENSE - Snooze Guard Logic
+    // =====================================================
+
+    public static readonly EARLY_BUFFER_MS = 30 * 60 * 1000;  // 30 minutes before bedtime
+    public static readonly LATE_BUFFER_MS = 2 * 60 * 60 * 1000; // 2 hours after bedtime (max snooze)
+
+    public handleSnooze(targetBedtimeMs: number): { success: boolean; reason?: 'TOO_EARLY' | 'STALE_RESET' } {
+        const now = Date.now();
+
+        // Guard 1: Too Early - User clicked snooze way before bedtime (probably stale UI)
+        if (now < (targetBedtimeMs - ActivityTracker.EARLY_BUFFER_MS)) {
+            Logger.warn(`Snooze Guard: TOO_EARLY. Now: ${new Date(now).toLocaleTimeString()}, Target: ${new Date(targetBedtimeMs).toLocaleTimeString()}`);
+            return { success: false, reason: 'TOO_EARLY' };
+        }
+
+        // Guard 2: Stale/Next Day - User clicking snooze the morning after (more than 2h past bedtime)
+        if (now > (targetBedtimeMs + ActivityTracker.LATE_BUFFER_MS)) {
+            Logger.warn(`Snooze Guard: STALE_RESET. Now: ${new Date(now).toLocaleTimeString()}, Target: ${new Date(targetBedtimeMs).toLocaleTimeString()}`);
+            return { success: false, reason: 'STALE_RESET' };
+        }
+
+        // Within valid window - allow snooze
+        Logger.info(`Snooze Guard: ALLOWED. Within valid window.`);
+        return { success: true };
+    }
+
+    /**
+     * Complete daily reset: Clears all activity stats AND slot machine state.
+     * Called when user explicitly starts a new day or when "morning after" is detected.
+     */
+    public resetForNewDay(): void {
+        StorageManager.instance.updateToday(s => {
+            // Reset activity tracking
+            s.activeSeconds = 0;
+            s.typingSeconds = 0;
+            s.reviewingSeconds = 0;
+
+            // Reset code metrics
+            s.humanTypedLines = 0;
+            s.humanRefactoredLines = 0;
+            s.aiGeneratedLines = 0;
+            s.aiEditedLines = 0;
+            s.humanChars = 0;
+            s.aiChars = 0;
+            s.refactorChars = 0;
+
+            // Reset slot machine state
+            s.slotState = {
+                runsRemaining: 1,
+                currentEnergy: 3,
+                currentScore: 0,
+                dailyHighScore: 0,
+                bestAnalysis: null
+            };
+        });
+        Logger.info('ActivityTracker: Full daily reset complete (stats + slot machine).');
+    }
+
     public dispose() {
         if (this._trackingInterval) clearInterval(this._trackingInterval);
         // if (this._interruptionTimeout) clearTimeout(this._interruptionTimeout);

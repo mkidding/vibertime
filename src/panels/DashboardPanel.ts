@@ -174,6 +174,12 @@ export class DashboardPanel {
                         });
                         this.sendUpdate();
                         return;
+                    case "resetForNewDay":
+                        Logger.info('Debug: Resetting for new day (full reset: stats + slot)');
+                        ActivityTracker.instance.resetForNewDay();
+                        NotificationManager.instance.reset();
+                        this.sendUpdate();
+                        return;
                 }
             },
             undefined,

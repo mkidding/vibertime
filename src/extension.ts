@@ -90,6 +90,19 @@ export function activate(context: vscode.ExtensionContext) {
             })
         );
 
+        // Command: Hide Snooze UI (used by NotificationManager during morning reset)
+        context.subscriptions.push(
+            vscode.commands.registerCommand('vibertime.hideSnoozeUI', () => {
+                Logger.info('hideSnoozeUI: Sending command to webview');
+                if (DashboardPanel.currentPanel) {
+                    // Send message to webview to hide snooze-related UI
+                    (DashboardPanel.currentPanel as any)._panel?.webview?.postMessage({
+                        type: 'hideSnoozeUI'
+                    });
+                }
+            })
+        );
+
 
         // Debug Commands (Development Mode Only)
         if (context.extensionMode === vscode.ExtensionMode.Development) {

@@ -1,5 +1,7 @@
 import * as vscode from "vscode";
 import { Disposable, Webview, WebviewPanel, window, Uri, ViewColumn } from "vscode";
+import * as fs from "fs";
+import * as path from "path";
 import { ActivityTracker } from "../core/ActivityTracker";
 import { MetricsEngine } from "../core/MetricsEngine";
 import { ConfigManager } from "../config/ConfigManager";
@@ -188,8 +190,25 @@ export class DashboardPanel {
     }
 
     private _getWebviewContent(webview: Webview, extensionUri: Uri) {
-        const stylesUri = getUri(webview, extensionUri, ["out", "webview", "assets", "index.css"]);
-        const scriptUri = getUri(webview, extensionUri, ["out", "webview", "assets", "index.js"]);
+        // IMMUNITY PROTOCOL: Dynamically discover hashed asset filenames
+        const assetsDir = path.join(extensionUri.fsPath, "out", "webview", "assets");
+        let jsFile = "index.js";
+        let cssFile = "index.css";
+
+        try {
+            const files = fs.readdirSync(assetsDir);
+            // Find the hashed JS and CSS files (e.g., index-abc123.js)
+            const jsMatch = files.find(f => f.startsWith("index-") && f.endsWith(".js"));
+            const cssMatch = files.find(f => f.startsWith("index-") && f.endsWith(".css"));
+            if (jsMatch) jsFile = jsMatch;
+            if (cssMatch) cssFile = cssMatch;
+            Logger.info(`WebviewAssets: JS=${jsFile}, CSS=${cssFile}`);
+        } catch (e) {
+            Logger.warn(`Could not read assets dir, using fallback filenames: ${e}`);
+        }
+
+        const stylesUri = getUri(webview, extensionUri, ["out", "webview", "assets", cssFile]);
+        const scriptUri = getUri(webview, extensionUri, ["out", "webview", "assets", jsFile]);
 
         const nonce = getNonce();
 
@@ -199,6 +218,10 @@ export class DashboardPanel {
         <head>
           <meta charset="UTF-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <!-- IMMUNITY PROTOCOL: Anti-Cache Headers -->
+          <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0" />
+          <meta http-equiv="Pragma" content="no-cache" />
+          <meta http-equiv="Expires" content="0" />
           <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
           <link rel="stylesheet" type="text/css" href="${stylesUri}" />
           <title>Viber Time</title>

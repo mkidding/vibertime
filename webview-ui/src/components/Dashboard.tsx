@@ -8,15 +8,30 @@ import { vscode } from '../utils/vscode';
 
 export interface DashboardProps {
     activeSeconds: number;
+    humanEditSeconds: number;
+    humanReviewSeconds: number;
+    // Legacy time fields
     typingSeconds: number;
     reviewingSeconds: number;
     timeRatio: number;
     cyborgRatio: number;
+    // Derived Volumes (computed from 6 buckets)
+    bioVolume: number;
+    synthVolume: number;
+    externalVolume: number;
+    totalLines: number;
+    // Granular Matrix: 6 Primary Buckets
+    humanAddedLines: number;
+    humanRefactoredLines: number;
+    aiAddedLines: number;
+    aiRefactoredLines: number;
+    externalAddedLines: number;
+    externalRefactoredLines: number;
+    // Legacy
     humanChars: number;
     aiChars: number;
     refactorChars?: number;
     humanTypedLines?: number;
-    humanRefactoredLines?: number;
     aiGeneratedLines?: number;
     aiEditedLines?: number;
     bedtime: string;
@@ -403,19 +418,6 @@ export const Dashboard: React.FC<DashboardProps> = (props) => {
         });
     };
 
-    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-
-    // Calculate sub-percentages for details view
-    const humanTotal = (props.humanTypedLines || 0) + (props.humanRefactoredLines || 0);
-    const aiTotal = (props.aiGeneratedLines || 0) + (props.aiEditedLines || 0);
-
-    // Avoid division by zero
-    const typePct = humanTotal > 0 ? ((props.humanTypedLines || 0) / humanTotal) * 100 : 0;
-    const refactorPct = humanTotal > 0 ? ((props.humanRefactoredLines || 0) / humanTotal) * 100 : 0;
-
-    const genPct = aiTotal > 0 ? ((props.aiGeneratedLines || 0) / aiTotal) * 100 : 0;
-    const editPct = aiTotal > 0 ? ((props.aiEditedLines || 0) / aiTotal) * 100 : 0;
-
     return (
         <div className="flex flex-col h-screen bg-black text-white overflow-x-auto scanlines mesh-bg select-none min-w-[400px]">
             {showSettings && <SettingsOverlay bedtime={props.bedtime} dayStartHour={props.dayStartHour} idleTimeoutSeconds={props.idleTimeoutSeconds} onClose={() => setShowSettings(false)} onUnlockDebug={() => setIsDebugEnabled(true)} />}
@@ -480,74 +482,91 @@ export const Dashboard: React.FC<DashboardProps> = (props) => {
                                 <p className="hero-stat-green tabular-nums">{formatTime(props.activeSeconds)}</p>
                             </div>
 
-                            {/* 2. Sync Status (Merged Code + Time Ratios) */}
-                            <div
-                                className="bg-gray-900/80 border border-gray-800 rounded-lg p-5 shadow-xl transition-all hover:bg-gray-900 cursor-pointer group"
-                                onClick={() => setIsDetailsOpen(!isDetailsOpen)}
-                            >
-                                <h2 className="text-[10px] text-gray-400 font-mono uppercase tracking-wider mb-4 flex items-center justify-between gap-2">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-purple-500">◆</span> STATS FOR TODAY
-                                    </div>
-                                    <span className={`transform transition-transform duration-300 ${isDetailsOpen ? 'rotate-180' : ''} text-gray-600 group-hover:text-gray-400`}>
-                                        ▼
-                                    </span>
+                            {/* 2. Stats Card - Always Expanded Matrix View */}
+                            <div className="bg-gray-900/80 border border-gray-800 rounded-lg p-5 shadow-xl transition-all hover:bg-gray-900">
+                                <h2 className="text-[10px] text-gray-400 font-mono uppercase tracking-wider mb-4 flex items-center gap-2">
+                                    <span className="text-purple-500">◆</span> STATS FOR TODAY
                                 </h2>
 
-                                {/* Code Ratio Bar (Cyan = Human, Green = AI) */}
-                                <div className="mb-6">
+                                {/* Code Ratio Bar (3-Segment: Bio/Ext/Synth) */}
+                                <div className="mb-4">
                                     <div className="flex items-center justify-between text-[10px] text-gray-500 font-mono mb-2">
-                                        <span className="flex items-center gap-1 uppercase">👤 Biological</span>
-                                        <span className="flex items-center gap-1 uppercase">🤖 Synthetic</span>
+                                        <span className="flex items-center gap-1 uppercase">👤 Bio</span>
+                                        <span className="flex items-center gap-1 uppercase text-gray-600">👻 Ext.</span>
+                                        <span className="flex items-center gap-1 uppercase">🤖 Synth</span>
                                     </div>
                                     <div className="w-full bg-gray-950 h-3 rounded-full overflow-hidden flex border border-gray-800 p-[1px]">
-                                        <div className="h-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.5)] transition-all duration-1000 border-r border-white/20" style={{ width: `${100 - props.cyborgRatio}%` }}></div>
-                                        <div className="h-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)] transition-all duration-1000" style={{ width: `${props.cyborgRatio}%` }}></div>
+                                        {props.totalLines > 0 ? (
+                                            <>
+                                                <div className="h-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.5)] transition-all duration-1000" style={{ width: `${(props.bioVolume / props.totalLines) * 100}%` }}></div>
+                                                <div className="h-full bg-gray-600 transition-all duration-1000" style={{ width: `${(props.externalVolume / props.totalLines) * 100}%` }}></div>
+                                                <div className="h-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)] transition-all duration-1000" style={{ width: `${(props.synthVolume / props.totalLines) * 100}%` }}></div>
+                                            </>
+                                        ) : (
+                                            <div className="h-full bg-gray-800 w-full"></div>
+                                        )}
+                                    </div>
+                                    <div className="flex justify-center mt-2">
+                                        <span className="text-xs text-gray-400 font-mono">Total Lines: <span className="text-white font-bold">{props.totalLines}</span></span>
                                     </div>
                                 </div>
 
-                                {/* Accordion: Detailed Breakdown */}
-                                <div className={`grid transition-all duration-500 ease-in-out ${isDetailsOpen ? 'grid-rows-[1fr] opacity-100 mb-6' : 'grid-rows-[0fr] opacity-0'}`}>
-                                    <div className="overflow-hidden min-h-0">
-                                        <div className="grid grid-cols-2 gap-4 p-3 bg-black/20 rounded border border-gray-800/50">
-
-                                            {/* Human Detail */}
-                                            <div>
-                                                <div className="text-[9px] text-cyan-500/80 uppercase mb-1 flex justify-between">
-                                                    <span>Input</span>
-                                                    <span>Refactor</span>
-                                                </div>
-                                                <div className="flex h-1.5 rounded-full overflow-hidden bg-gray-900">
-                                                    <div className="bg-cyan-600 transition-all duration-500" style={{ width: `${typePct}%` }} title={`Typed: ${props.humanTypedLines} lines`}></div>
-                                                    <div className="bg-cyan-900 transition-all duration-500" style={{ width: `${refactorPct}%` }} title={`Refactored: ${props.humanRefactoredLines} lines`}></div>
-                                                </div>
-                                            </div>
-
-                                            {/* AI Detail */}
-                                            <div>
-                                                <div className="text-[9px] text-green-500/80 uppercase mb-1 flex justify-between">
-                                                    <span>Gen</span>
-                                                    <span>Edit</span>
-                                                </div>
-                                                <div className="flex h-1.5 rounded-full overflow-hidden bg-gray-900">
-                                                    <div className="bg-green-600 transition-all duration-500" style={{ width: `${genPct}%` }} title={`Generated: ${props.aiGeneratedLines} lines`}></div>
-                                                    <div className="bg-green-900 transition-all duration-500" style={{ width: `${editPct}%` }} title={`Edited: ${props.aiEditedLines} lines`}></div>
-                                                </div>
-                                            </div>
-
+                                {/* Granular Breakdown - Percentage Bars (BIO and SYNTH only) */}
+                                <div className="grid grid-cols-2 gap-4 p-3 bg-black/20 rounded border border-gray-800/50 mb-4">
+                                    {/* BIO Column - TYPE vs REFACT bar */}
+                                    <div>
+                                        <div className="text-[9px] text-cyan-400 uppercase mb-1 text-center">BIO</div>
+                                        <div className="text-[8px] text-cyan-500/80 mb-1 flex justify-between">
+                                            <span>TYPE</span>
+                                            <span>REFACT</span>
                                         </div>
+                                        <div className="flex h-2 rounded-full overflow-hidden bg-gray-900">
+                                            {props.bioVolume > 0 ? (
+                                                <>
+                                                    <div className="bg-cyan-500 transition-all duration-500" style={{ width: `${((props.humanAddedLines || 0) / props.bioVolume) * 100}%` }}></div>
+                                                    <div className="bg-cyan-800 transition-all duration-500" style={{ width: `${((props.humanRefactoredLines || 0) / props.bioVolume) * 100}%` }}></div>
+                                                </>
+                                            ) : (
+                                                <div className="bg-gray-800 w-full"></div>
+                                            )}
+                                        </div>
+                                        <div className="text-[8px] text-cyan-300 text-center mt-1 font-bold">{props.bioVolume}</div>
+                                    </div>
+
+                                    {/* SYNTH Column - GEN vs REFACT bar */}
+                                    <div>
+                                        <div className="text-[9px] text-green-400 uppercase mb-1 text-center">SYNTH</div>
+                                        <div className="text-[8px] text-green-500/80 mb-1 flex justify-between">
+                                            <span>GEN</span>
+                                            <span>REFACT</span>
+                                        </div>
+                                        <div className="flex h-2 rounded-full overflow-hidden bg-gray-900">
+                                            {props.synthVolume > 0 ? (
+                                                <>
+                                                    <div className="bg-green-500 transition-all duration-500" style={{ width: `${((props.aiAddedLines || 0) / props.synthVolume) * 100}%` }}></div>
+                                                    <div className="bg-green-800 transition-all duration-500" style={{ width: `${((props.aiRefactoredLines || 0) / props.synthVolume) * 100}%` }}></div>
+                                                </>
+                                            ) : (
+                                                <div className="bg-gray-800 w-full"></div>
+                                            )}
+                                        </div>
+                                        <div className="text-[8px] text-green-300 text-center mt-1 font-bold">{props.synthVolume}</div>
                                     </div>
                                 </div>
 
-                                {/* Time Ratio Bar (Purple = Typing, Orange = Reviewing) */}
-                                <div>
+                                {/* Time Ratio Bar (Purple = Edit, Orange = Review) */}
+                                <div className="mb-4">
                                     <div className="flex items-center justify-between text-[10px] text-gray-500 font-mono mb-2">
-                                        <span className="flex items-center gap-1 uppercase">⌨️ Interaction</span>
-                                        <span className="flex items-center gap-1 uppercase">👀 Observation</span>
+                                        <span className="flex items-center gap-1 uppercase">⌨️ Edit Time</span>
+                                        <span className="flex items-center gap-1 uppercase">👀 Review Time</span>
                                     </div>
                                     <div className="w-full bg-gray-950 h-3 rounded-full overflow-hidden flex border border-gray-800 p-[1px]">
                                         <div className="h-full bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)] transition-all duration-1000" style={{ width: `${props.timeRatio}%` }}></div>
                                         <div className="h-full bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.5)] transition-all duration-1000" style={{ width: `${100 - props.timeRatio}%` }}></div>
+                                    </div>
+                                    {/* Total Human Time */}
+                                    <div className="flex justify-center mt-2">
+                                        <span className="text-xs text-gray-400 font-mono">Total Human Time: <span className="text-purple-300 font-bold">{formatTime(props.humanEditSeconds + props.humanReviewSeconds)}</span></span>
                                     </div>
                                 </div>
                             </div>
@@ -609,7 +628,7 @@ export const Dashboard: React.FC<DashboardProps> = (props) => {
                         )}
                     </div>
                     <div className="flex items-center gap-3">
-                        <span onClick={handleDebugTrigger} className="text-xs text-gray-600 font-mono cursor-pointer select-none hover:text-purple-500 transition-colors">v0.2.13</span>
+                        <span onClick={handleDebugTrigger} className="text-xs text-gray-600 font-mono cursor-pointer select-none hover:text-purple-500 transition-colors">v0.2.14</span>
                     </div>
                 </div>
             </footer >

@@ -16,6 +16,17 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({ stats, onExit }) => {
     // So "X" = onExit.
     // Actually, let's keep it simple: Render full panel.
     const [showJson, setShowJson] = useState(false);
+    const [copied, setCopied] = useState(false);
+
+    const handleCopyJson = async () => {
+        try {
+            await navigator.clipboard.writeText(JSON.stringify(stats, null, 2));
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+        } catch (e) {
+            console.error('Failed to copy:', e);
+        }
+    };
 
     const triggerSoftWarning = () => {
         vscode.postMessage({ type: 'triggerSoftWarning' });
@@ -67,44 +78,119 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({ stats, onExit }) => {
                 </div>
             </div>
 
-            {/* Actions */}
+            {/* Granular Matrix */}
+            <div className="mb-4 pb-3 border-b border-gray-800">
+                <div className="text-[9px] text-gray-500 uppercase mb-2">Granular Matrix</div>
+
+                {/* Bio Row - TYPE vs REFACT */}
+                <div className="flex items-center gap-1 mb-1">
+                    <span className="text-[8px] text-cyan-400 w-12">BIO:</span>
+                    <div className="flex-1 grid grid-cols-2 gap-1">
+                        <div className="bg-cyan-900/30 rounded px-1 py-0.5 border border-cyan-700/50 text-center">
+                            <span className="text-[7px] text-cyan-500">TYPE </span>
+                            <span className="text-[10px] font-bold text-cyan-300">{stats.humanAddedLines || 0}</span>
+                        </div>
+                        <div className="bg-cyan-950/30 rounded px-1 py-0.5 border border-cyan-800/50 text-center">
+                            <span className="text-[7px] text-cyan-600">REFACT </span>
+                            <span className="text-[10px] font-bold text-cyan-400">{stats.humanRefactoredLines || 0}</span>
+                        </div>
+                    </div>
+                    <span className="text-[9px] text-cyan-300 w-8 text-right">{stats.bioVolume || 0}</span>
+                </div>
+
+                {/* Synth Row - GEN vs REFACT */}
+                <div className="flex items-center gap-1 mb-1">
+                    <span className="text-[8px] text-green-400 w-12">SYNTH:</span>
+                    <div className="flex-1 grid grid-cols-2 gap-1">
+                        <div className="bg-green-900/30 rounded px-1 py-0.5 border border-green-700/50 text-center">
+                            <span className="text-[7px] text-green-500">GEN </span>
+                            <span className="text-[10px] font-bold text-green-300">{stats.aiAddedLines || 0}</span>
+                        </div>
+                        <div className="bg-green-950/30 rounded px-1 py-0.5 border border-green-800/50 text-center">
+                            <span className="text-[7px] text-green-600">REFACT </span>
+                            <span className="text-[10px] font-bold text-green-400">{stats.aiRefactoredLines || 0}</span>
+                        </div>
+                    </div>
+                    <span className="text-[9px] text-green-300 w-8 text-right">{stats.synthVolume || 0}</span>
+                </div>
+
+                {/* EXT Row - Just total, no breakdown */}
+                <div className="flex items-center gap-1 mb-2">
+                    <span className="text-[8px] text-gray-400 w-12">EXT.:</span>
+                    <div className="flex-1 bg-gray-700/30 rounded px-1 py-0.5 border border-gray-600/50 text-center">
+                        <span className="text-[10px] font-bold text-gray-300">{stats.externalVolume || 0}</span>
+                    </div>
+                    <span className="text-[9px] text-gray-300 w-8 text-right"></span>
+                </div>
+
+                {/* Storm Events (Noise Filter) */}
+                <div className="flex items-center justify-center gap-2 text-[9px] pt-1 border-t border-gray-800">
+                    <span className="text-yellow-500">⚡</span>
+                    <span className="text-gray-500">Storm Events:</span>
+                    <span className="text-yellow-400 font-bold">{stats.stormEvents || 0}</span>
+                    <span className="text-gray-600">|</span>
+                    <span className="text-gray-500">Total:</span>
+                    <span className="text-white font-bold">{stats.totalLines || 0}</span>
+                </div>
+            </div>
+
+            {/* Actions - Line Buttons */}
             <div className="space-y-3">
+                {/* Row 1: BIO (Cyan/Blue) */}
                 <div className="grid grid-cols-2 gap-2">
                     <button
-                        onClick={() => vscode.postMessage({ type: 'debugAddSpecificLines', payload: { type: 'typed', amount: 100 } })}
+                        onClick={() => vscode.postMessage({ type: 'debugAddLines', payload: { field: 'humanAddedLines', amount: 100 } })}
                         className="py-1 px-2 bg-cyan-700 hover:bg-cyan-600 text-white text-[10px] font-bold rounded border border-cyan-500 shadow-sm"
                     >
-                        +100 TYPED
+                        +100 BIO TYPE
                     </button>
                     <button
-                        onClick={() => vscode.postMessage({ type: 'debugAddSpecificLines', payload: { type: 'refactored', amount: 100 } })}
+                        onClick={() => vscode.postMessage({ type: 'debugAddLines', payload: { field: 'humanRefactoredLines', amount: 100 } })}
                         className="py-1 px-2 bg-blue-700 hover:bg-blue-600 text-white text-[10px] font-bold rounded border border-blue-500 shadow-sm"
                     >
-                        +100 REFACT
+                        +100 BIO REFACT
                     </button>
+                </div>
+
+                {/* Row 2: SYNTH (Green/Emerald) */}
+                <div className="grid grid-cols-2 gap-2">
                     <button
-                        onClick={() => vscode.postMessage({ type: 'debugAddSpecificLines', payload: { type: 'generated', amount: 100 } })}
+                        onClick={() => vscode.postMessage({ type: 'debugAddLines', payload: { field: 'aiAddedLines', amount: 100 } })}
                         className="py-1 px-2 bg-green-700 hover:bg-green-600 text-white text-[10px] font-bold rounded border border-green-500 shadow-sm"
                     >
-                        +100 GEN
+                        +100 SYNTH GEN
                     </button>
                     <button
-                        onClick={() => vscode.postMessage({ type: 'debugAddSpecificLines', payload: { type: 'edited', amount: 100 } })}
+                        onClick={() => vscode.postMessage({ type: 'debugAddLines', payload: { field: 'aiRefactoredLines', amount: 100 } })}
                         className="py-1 px-2 bg-emerald-700 hover:bg-emerald-600 text-white text-[10px] font-bold rounded border border-emerald-500 shadow-sm"
                     >
-                        +100 EDIT
+                        +100 SYNTH REFACT
                     </button>
+                </div>
+
+                {/* Row 3: EXT (Gray) - Single button since no Add/Ref breakdown */}
+                <div className="grid grid-cols-1 gap-2">
+                    <button
+                        onClick={() => vscode.postMessage({ type: 'debugAddLines', payload: { field: 'externalAddedLines', amount: 100 } })}
+                        className="py-1 px-2 bg-gray-600 hover:bg-gray-500 text-white text-[10px] font-bold rounded border border-gray-500 shadow-sm"
+                    >
+                        +100 EXT.
+                    </button>
+                </div>
+
+                {/* Row 4: Time */}
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-800">
                     <button
                         onClick={() => vscode.postMessage({ type: 'debugAddMinutes', payload: { typingMins: 10, reviewingMins: 0 } })}
                         className="py-1 px-2 bg-purple-700 hover:bg-purple-600 text-white text-[10px] font-bold rounded border border-purple-500 shadow-sm"
                     >
-                        +10m TYPE
+                        +10m EDIT
                     </button>
                     <button
                         onClick={() => vscode.postMessage({ type: 'debugAddMinutes', payload: { typingMins: 0, reviewingMins: 10 } })}
                         className="py-1 px-2 bg-orange-700 hover:bg-orange-600 text-white text-[10px] font-bold rounded border border-orange-500 shadow-sm"
                     >
-                        +10m REV
+                        +10m REVIEW
                     </button>
                 </div>
 
@@ -171,12 +257,22 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({ stats, onExit }) => {
                 </button>
 
                 <div className="pt-2 border-t border-gray-800">
-                    <button
-                        onClick={() => setShowJson(!showJson)}
-                        className="text-[10px] text-gray-500 hover:text-gray-300 w-full text-center mb-2"
-                    >
-                        {showJson ? 'Hide JSON' : 'Show RAW JSON'}
-                    </button>
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                        <button
+                            onClick={() => setShowJson(!showJson)}
+                            className="text-[10px] text-gray-500 hover:text-gray-300"
+                        >
+                            {showJson ? 'Hide JSON' : 'Show RAW JSON'}
+                        </button>
+                        {showJson && (
+                            <button
+                                onClick={handleCopyJson}
+                                className="text-[10px] text-blue-400 hover:text-blue-300"
+                            >
+                                {copied ? '✓ Copied!' : '📋 Copy'}
+                            </button>
+                        )}
+                    </div>
                     {showJson && (
                         <pre className="text-[9px] text-green-400 bg-black p-2 rounded overflow-x-auto font-mono leading-tight">
                             {JSON.stringify(stats, null, 2)}

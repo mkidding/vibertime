@@ -19,18 +19,31 @@ export interface SlotState {
 export interface DailyStats {
     date: string;
 
-    // Activity
+    // Activity - Primary Time Fields (Smart Gap)
     activeSeconds: number;
+    humanEditSeconds: number;    // Human editing time (keyboard input)
+    humanReviewSeconds: number;  // Human review time (reading/thinking)
+
+    // Legacy Time Fields (kept for backward compatibility)
     typingSeconds: number;
     reviewingSeconds: number;
 
-    // Metrics (Granular)
+    // Granular Matrix: SOURCE (Bio/Synth/Ghost) x ACTION (Add/Refactor)
+    // These are the 6 primary buckets that get incremented by the tracker
+    humanAddedLines: number;       // Bio + Add: Human typing new code
+    humanRefactoredLines: number;  // Bio + Refactor: Human modifying existing code
+    aiAddedLines: number;          // Synth + Add: AI inserting new code
+    aiRefactoredLines: number;     // Synth + Refactor: AI modifying existing code
+    externalAddedLines: number;    // Ghost + Add: External insertion (unfocused)
+    externalRefactoredLines: number; // Ghost + Refactor: External modification (unfocused)
+
+    // Noise filter counter
+    stormEvents: number;
+
+    // Legacy fields (kept for backward compatibility, will be deprecated)
     humanTypedLines: number;
-    humanRefactoredLines: number;
     aiGeneratedLines: number;
     aiEditedLines: number;
-
-    // Legacy/Aggregate
     humanChars: number;
     aiChars: number;
     refactorChars: number;
@@ -77,8 +90,26 @@ export class StorageManager {
         try {
             if (fs.existsSync(this._historyFile)) {
                 const data = fs.readFileSync(this._historyFile, 'utf8');
-                this._history = JSON.parse(data);
+                const rawHistory = JSON.parse(data) as History;
+
+                // Schema Hydration: Backfill missing fields for each day's stats
+                let needsSave = false;
+                for (const date of Object.keys(rawHistory)) {
+                    const hydrated = this.hydrateStats(date, rawHistory[date]);
+                    if (hydrated !== rawHistory[date]) {
+                        rawHistory[date] = hydrated;
+                        needsSave = true;
+                    }
+                }
+
+                this._history = rawHistory;
                 Logger.info(`StorageManager: Loaded history from ${this._historyFile}`);
+
+                // Persist hydrated data immediately so schema is updated on disk
+                if (needsSave) {
+                    Logger.info('StorageManager: Schema migration - backfilling missing fields');
+                    this.saveHistory();
+                }
             } else {
                 Logger.info('StorageManager: No history file found. Starting fresh.');
                 this._history = {};
@@ -87,6 +118,37 @@ export class StorageManager {
             Logger.error('StorageManager: Failed to load history', e);
             this._history = {};
         }
+    }
+
+    /**
+     * Schema Hydration: Merge saved stats with defaults to backfill missing fields.
+     * This ensures existing users get new fields (like stormEvents) set to 0
+     * without losing their existing data (like activeSeconds).
+     */
+    private hydrateStats(date: string, saved: Partial<DailyStats>): DailyStats {
+        const defaults = this.getEmptyStats(date);
+
+        // Deep merge for nested objects like slotState
+        const hydrated: DailyStats = {
+            ...defaults,
+            ...saved,
+            // Ensure slotState is properly merged (not just overwritten)
+            slotState: {
+                ...defaults.slotState,
+                ...(saved.slotState || {})
+            }
+        };
+
+        // Legacy Migration: Map old time fields to new fields if not already set
+        // This preserves the user's today progress on upgrade
+        if (!saved.humanEditSeconds && saved.typingSeconds) {
+            hydrated.humanEditSeconds = saved.typingSeconds;
+        }
+        if (!saved.humanReviewSeconds && saved.reviewingSeconds) {
+            hydrated.humanReviewSeconds = saved.reviewingSeconds;
+        }
+
+        return hydrated;
     }
 
     private saveHistory() {
@@ -118,10 +180,21 @@ export class StorageManager {
         return {
             date,
             activeSeconds: 0,
+            humanEditSeconds: 0,
+            humanReviewSeconds: 0,
+            // Legacy time fields (for backward compatibility)
             typingSeconds: 0,
             reviewingSeconds: 0,
-            humanTypedLines: 0,
+            // Granular Matrix: 6 primary buckets
+            humanAddedLines: 0,
             humanRefactoredLines: 0,
+            aiAddedLines: 0,
+            aiRefactoredLines: 0,
+            externalAddedLines: 0,
+            externalRefactoredLines: 0,
+            stormEvents: 0,
+            // Legacy fields (deprecated)
+            humanTypedLines: 0,
             aiGeneratedLines: 0,
             aiEditedLines: 0,
             humanChars: 0,
@@ -145,14 +218,14 @@ export class StorageManager {
 
             // Hook: New Day Started
             Logger.info('StorageManager: New Day Started. Triggering Update Check...');
-            // Avoid circular dependency by using dynamic import or ensuring UpdateManager is ready
-            // We can just trust the singleton is ready since extension.ts inits it.
-            // But StorageManager doesn't import UpdateManager yet.
-            // Let's defer execution slightly to be safe.
             setTimeout(() => {
                 const { UpdateManager } = require('./UpdateManager');
                 UpdateManager.instance.checkForUpdates(false);
             }, 5000);
+        } else {
+            // Safety net: Hydrate existing entry in case it was loaded from old schema
+            // (This handles edge cases where loadHistory hydration was bypassed)
+            this._history[today] = this.hydrateStats(today, this._history[today]);
         }
         return this._history[today];
     }

@@ -103,8 +103,40 @@ export class MetricsEngine {
         return this.currentStats;
     }
 
+    // =====================================================
+    // DERIVED VALUES: Computed from 6 granular buckets
+    // =====================================================
+
+    public get bioVolume(): number {
+        const s = this.currentStats;
+        return (s.humanAddedLines || 0) + (s.humanRefactoredLines || 0);
+    }
+
+    public get synthVolume(): number {
+        const s = this.currentStats;
+        return (s.aiAddedLines || 0) + (s.aiRefactoredLines || 0);
+    }
+
+    public get externalVolume(): number {
+        const s = this.currentStats;
+        return (s.externalAddedLines || 0) + (s.externalRefactoredLines || 0);
+    }
+
+    public get totalLines(): number {
+        return this.bioVolume + this.synthVolume + this.externalVolume;
+    }
+
+    // =====================================================
+    // LOGIC SIEVE: 4-Filter Classification System
+    // =====================================================
+
+    // Noise filter state: track unique files modified in last 1 second
+    private _recentFileChanges: Map<string, number> = new Map(); // filename -> timestamp
+    private static readonly NOISE_WINDOW_MS = 1000; // 1 second window
+    private static readonly NOISE_THRESHOLD = 2;    // 2+ files = noise
+
     private startMonitoring() {
-        // Track Selection for Smart Delete Heuristic
+        // Track Selection for Smart Delete Heuristic (Legacy)
         this._disposables.push(
             vscode.window.onDidChangeTextEditorSelection((e) => {
                 if (e.selections.length > 0) {
@@ -113,87 +145,192 @@ export class MetricsEngine {
             })
         );
 
-        // Listen for document changes
+        // Main document change listener with 4-filter Logic Sieve
         this._disposables.push(
             vscode.workspace.onDidChangeTextDocument((e) => {
+                // Skip Undo/Redo
                 if (e.reason === vscode.TextDocumentChangeReason.Undo || e.reason === vscode.TextDocumentChangeReason.Redo) {
                     return;
                 }
-
                 if (e.contentChanges.length === 0) return;
 
-                StorageManager.instance.updateToday(stats => {
-                    for (const change of e.contentChanges) {
-                        const text = change.text;
-                        const len = text.length;
-                        const lines = (text.match(/\n/g) || []).length;
+                // =========================================
+                // FILTER 0: Skip non-file documents (Output, Debug Console, etc.)
+                // =========================================
+                const docUri = e.document.uri;
+                if (docUri.scheme !== 'file') {
+                    // Skip output channels, debug consoles, virtual docs, etc.
+                    return;
+                }
 
-                        const msSinceType = InputListener.timeSinceHumanInput;
-                        const msSincePaste = InputListener.timeSincePaste;
+                // =========================================
+                // FILTER 0.5: Skip binary and non-text files
+                // =========================================
+                const languageId = e.document.languageId;
+                const filePath = e.document.fileName.toLowerCase();
 
-                        // CASE 0: Deletion (Smart Delete Heuristic) - Human Refactor
-                        if (text === '') {
-                            const deletedLines = change.range.end.line - change.range.start.line;
-                            if (deletedLines > 0) {
-                                stats.humanRefactoredLines += deletedLines;
-                            }
-                            continue;
-                        }
+                // Skip binary file extensions
+                const binaryExtensions = [
+                    '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.ico', '.webp', '.svg',
+                    '.mp3', '.mp4', '.wav', '.ogg', '.webm', '.avi', '.mov',
+                    '.zip', '.tar', '.gz', '.rar', '.7z',
+                    '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+                    '.exe', '.dll', '.so', '.dylib', '.bin',
+                    '.woff', '.woff2', '.ttf', '.otf', '.eot',
+                    '.lock', '.sqlite', '.db'
+                ];
 
-                        // CASE 1: Safe Paste (Native API) -> Human Refactor
-                        if (msSincePaste < 100) {
-                            stats.refactorChars += len;
-                            stats.humanRefactoredLines += lines;
-                            // Logger.info(`[Metrics] Refactor (Safe Paste): +${len} chars`);
-                            continue;
-                        }
+                if (binaryExtensions.some(ext => filePath.endsWith(ext))) {
+                    return;
+                }
 
-                        // CASE 2: Human Typing (Fresh Input) -> Human Typed
-                        if (msSinceType < 100) {
-                            stats.humanChars += len;
-                            stats.humanTypedLines += lines;
-                            continue;
-                        }
+                // Also skip if VS Code thinks it's a binary/unknown language
+                if (languageId === 'binary' || languageId === 'unknown') {
+                    return;
+                }
 
-                        // CASE 3: AI / Cyborg (Ghost Text / Tab Complete)
-                        if (len > 5) {
-                            stats.aiChars += len;
-                            if (change.rangeLength > 0) {
-                                stats.aiEditedLines += lines;
-                                // Logger.info(`[Metrics] AI Edit (Replacement): +${lines} lines`);
-                            } else {
-                                stats.aiGeneratedLines += lines;
-                                // Logger.info(`[Metrics] AI Gen (Insert): +${lines} lines`);
-                            }
+                const now = Date.now();
+                const fileName = e.document.fileName;
 
-                            // Fallback: Clipboard check
-                            if (len > 50) {
-                                vscode.env.clipboard.readText().then(clipText => {
-                                    if (clipText === text) {
-                                        // Async update - might be tricky with debouncing if we don't lock
-                                        // But StorageManager updateToday handles the object reference.
-                                        StorageManager.instance.updateToday(s => {
-                                            s.aiChars -= len;
-                                            if (change.rangeLength > 0) s.aiEditedLines -= lines;
-                                            else s.aiGeneratedLines -= lines;
-
-                                            s.refactorChars += len;
-                                            s.humanRefactoredLines += lines;
-                                        });
-                                    }
-                                });
-                            }
-                        } else {
-                            // Tiny changes -> Human Typed (Generous)
-                            stats.humanChars += len;
-                            stats.humanTypedLines += lines;
-                        }
+                // =========================================
+                // FILTER 1: NOISE PROTECTION (2-File Rule)
+                // =========================================
+                // Clean up old entries
+                for (const [file, ts] of this._recentFileChanges) {
+                    if (now - ts > MetricsEngine.NOISE_WINDOW_MS) {
+                        this._recentFileChanges.delete(file);
                     }
+                }
+                // Record this file change
+                this._recentFileChanges.set(fileName, now);
+
+                // Check noise threshold
+                if (this._recentFileChanges.size >= MetricsEngine.NOISE_THRESHOLD) {
+                    // Track storm events for debugging
+                    StorageManager.instance.updateToday(s => {
+                        s.stormEvents = (s.stormEvents || 0) + 1;
+                    });
+                    // Storm event ignored
+                    return; // IGNORE: git checkout, Save All, refactors
+                }
+
+                // =========================================
+                // FILTER 2: GHOST (External/Unfocused)
+                // =========================================
+                const isFocused = vscode.window.state.focused;
+
+                // Calculate total lines changed and detect operation type
+                let linesAdded = 0;
+                let linesRemoved = 0;
+                let totalChars = 0;
+                let isRefactor = false;
+                let hasSubstantialContent = false; // Track if change has real content (not just whitespace)
+
+                for (const change of e.contentChanges) {
+                    const text = change.text;
+                    totalChars += text.length;
+
+                    // Check if this change has substantial content (not just whitespace)
+                    const trimmedText = text.trim();
+                    if (trimmedText.length > 0) {
+                        hasSubstantialContent = true;
+                    }
+
+                    // Count lines REMOVED (from the replaced range)
+                    const removedLineCount = change.range.end.line - change.range.start.line;
+                    if (removedLineCount > 0) {
+                        linesRemoved += removedLineCount;
+                        isRefactor = true;
+                    }
+
+                    // Detect refactor: any change that replaces existing content
+                    if (change.rangeLength > 0) {
+                        isRefactor = true;
+                    }
+
+                    if (text === '') {
+                        // Pure deletion - already counted in linesRemoved
+                        isRefactor = true;
+                    } else {
+                        // Count lines ADDED (by counting newlines in the text)
+                        const newlineCount = (text.match(/\n/g) || []).length;
+                        linesAdded += newlineCount;
+                    }
+                }
+
+                // Skip pure whitespace-only changes (like auto-indent after Enter)
+                // These are often secondary events that shouldn't count as new lines
+                if (!hasSubstantialContent && linesAdded === 0 && linesRemoved === 0) {
+                    return;
+                }
+
+                // CRITICAL FIX: Only count LINES when there are actual newlines
+                // Single-character typing (no newlines) should NOT increment line counts
+                // This prevents double-counting from VS Code's paired events
+                let linesChanged = 0;
+                if (isRefactor) {
+                    // For refactors: count lines affected (deleted or added)
+                    linesChanged = Math.max(linesAdded, linesRemoved, 1);
+                } else if (linesAdded > 0) {
+                    // For insertions with newlines: count the newlines
+                    linesChanged = linesAdded;
+                } else {
+                    // For single-character typing without newlines: count 0 lines
+                    // (Characters are tracked separately via humanChars/aiChars)
+                    linesChanged = 0;
+                }
+
+                // Skip if no lines to count (but chars are still tracked below)
+                if (linesChanged === 0 && !hasSubstantialContent) {
+                    return;
+                }
+
+                // =========================================
+                // CLASSIFY BY SOURCE AND ACTION
+                // =========================================
+
+                if (!isFocused) {
+                    // GHOST: External change (AI agent, sync, etc)
+                    StorageManager.instance.updateToday(s => {
+                        if (isRefactor) {
+                            s.externalRefactoredLines = (s.externalRefactoredLines || 0) + linesChanged;
+                        } else {
+                            s.externalAddedLines = (s.externalAddedLines || 0) + linesChanged;
+                        }
+                    });
+                    return; // Do NOT update active time
+                }
+
+                if (totalChars > 50) {
+                    // SYNTHETIC: Large burst = AI/autocomplete
+                    StorageManager.instance.updateToday(s => {
+                        if (isRefactor) {
+                            s.aiRefactoredLines = (s.aiRefactoredLines || 0) + linesChanged;
+                        } else {
+                            s.aiAddedLines = (s.aiAddedLines || 0) + linesChanged;
+                        }
+                        // Also update legacy fields for backward compat
+                        s.aiChars += totalChars;
+                        s.aiGeneratedLines = (s.aiGeneratedLines || 0) + linesChanged;
+                    });
+                    return;
+                }
+
+                // BIOLOGICAL: Human typing
+                StorageManager.instance.updateToday(s => {
+                    if (isRefactor) {
+                        s.humanRefactoredLines = (s.humanRefactoredLines || 0) + linesChanged;
+                    } else {
+                        s.humanAddedLines = (s.humanAddedLines || 0) + linesChanged;
+                    }
+                    // Also update legacy fields for backward compat
+                    s.humanChars += totalChars;
+                    s.humanTypedLines = (s.humanTypedLines || 0) + linesChanged;
                 });
             })
         );
 
-        Logger.info('MetricsEngine started with Granular Classification (StorageManager)');
+        Logger.info('MetricsEngine started');
     }
 
     public populateDummyData() {

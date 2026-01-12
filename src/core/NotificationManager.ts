@@ -24,7 +24,6 @@ export class NotificationManager {
 
     public snooze(minutes: number) {
         this._snoozedUntil = this.now().getTime() + (minutes * 60000);
-        Logger.info(`Snoozed for ${minutes} minutes until ${new Date(this._snoozedUntil).toLocaleTimeString()}`);
         vscode.window.showInformationMessage(`Viber Time: Snoozed for ${minutes} minutes.`);
     }
 
@@ -35,7 +34,6 @@ export class NotificationManager {
     public reset() {
         this._snoozedUntil = 0;
         this._softNudgeFired = false;
-        Logger.info('NotificationManager state reset (Snooze cleared)');
     }
 
     public debugSetTime(targetTime: string) {
@@ -63,13 +61,11 @@ export class NotificationManager {
         this._checkInterval = setInterval(() => {
             this.checkTime();
         }, 1000); // Check every second for precision
-        Logger.info('Notification scheduler started');
     }
 
     private setupConfigListener() {
         vscode.workspace.onDidChangeConfiguration((e) => {
             if (e.affectsConfiguration('vibertime')) {
-                Logger.info('Config changed - forcing time check');
                 this.checkTime();
             }
         });
@@ -82,50 +78,34 @@ export class NotificationManager {
 
         // Diff in milliseconds
         const diffMs = targetMs - now.getTime();
-        const diffMins = Math.floor(diffMs / 60000); // For soft nudge comparison
+
+        // EMPTY CHAIR RULE: Suppress notifications if user is AFK
+        const isUserPresent = ActivityTracker.instance.isUserPresent;
+
+        // AMBUSH ON RETURN: If user was idle and just came back, trigger pending notifications
+        if (isUserPresent && ActivityTracker.instance.wasIdle) {
+            // User just returned! Check if we need to ambush them
+            if (diffMs <= 0) {
+                // EXPIRED: Show hard stop immediately
+                ActivityTracker.instance.clearWasIdle();
+                this.triggerHardStop();
+                return;
+            } else if (diffMs <= 5 * 60 * 1000 && !this._softNudgeFired) {
+                // DANGER ZONE (last 5 min): Show soft nudge immediately
+                this._softNudgeFired = true;
+                vscode.window.showWarningMessage(`⚠️ Viber Time: You're in the Danger Zone! Less than 5 minutes until Bedtime!`);
+            }
+            // Don't clear wasIdle here - let ActivityTracker handle it on next tick
+        }
+
+        // If user is NOT present, skip all automatic notifications
+        if (!isUserPresent) {
+            return; // Empty Chair - don't notify an absent user
+        }
 
         // Hard Stop (within 1 second of bedtime or overdue)
-        // logic: if diffMs is <= 0, we are DONE.
-        // But we want to avoid spamming. We need a flag?
-        // Actually, if we are snooze-able, we show the modal.
-        // If we are snoozed, getTargetBedtimeTimestamp returns the EXTENDED time.
-        // So checking <= 0 is correct for "Effective Bedtime".
-
-        // To prevent spamming hard stop every second:
-        // We only trigger if NOT snoozed (implicit in getTargetBedtimeTimestamp returning future)
-        // AND we haven't already triggered for this instance? 
-        // The modal blocks interaction.
-
-        // Wait, if snoozed, targetMs IS in the future. So diffMs > 0.
-        // If diffMs <= 0, it means we hit the deadline (original or snoozed).
-        // So we trigger Hard Stop.
-
-        // Optimization: Don't trigger if deep in the past (e.g. valid "next day" logic might be tricky?)
-        // If we represent "Tomorrow's Bedtime", diffMs is huge positive.
-        // If we just missed bedtime, diffMs is small negative.
-        // Let's say we trigger if diffMs <= 0 and diffMs > -5000 (within 5 seconds of expiry).
-        // But if user was away, they might miss it.
-        // Let's stick to the previous logic but with ms precision.
-
         if (diffMs <= -2000 && diffMs > -60000) { // Grace Buffer: Wait 2s past zero.
-            // Check if we already handled this "session" of expiry?
-            // Existing logic was "diffMins <= 0 && diffMins > -5".
-
-            // We need to be careful not to spam.
-            // But triggerHardStop shows a modal.
-            // Let's rely on standard debounce or just the fact that it's a modal?
-            // Ideally we check a flag "isHardStopActive"?
-            // For now, let's keep it simple but precise.
-            // Throttle: only trigger every 30s if persistent?
-
-            // Actually, existing logic relied on 60s interval.
-            // Now we rely on 1s interval.
-            // We MUST allow one-shot trigger.
-
-            // Let's use a simplified check:
-            // If we are mostly just checking time:
             if (Math.abs(diffMs + 2000) < 1500) { // Trigger window shifted by 2s
-                Logger.info(`[DEBUG_TRAP] Triggering Hard Stop. Raw MS: ${diffMs}`);
                 this.triggerHardStop();
                 return;
             }
@@ -133,9 +113,6 @@ export class NotificationManager {
 
         // Soft Nudge
         const nudgeMinutes = ConfigManager.softNudgeMinutes;
-        // Exact minute boundary check: e.g. if nudge is 30m.
-        // We want to trigger when diffMs is approx 30 * 60 * 1000.
-        // Range: [29m59s ... 30m01s]
         const nudgeMs = nudgeMinutes * 60 * 1000;
         if (Math.abs(diffMs - nudgeMs) < 1500 && !this._softNudgeFired) {
             this._softNudgeFired = true;

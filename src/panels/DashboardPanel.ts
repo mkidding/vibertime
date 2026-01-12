@@ -71,7 +71,13 @@ export class DashboardPanel {
         const payload = {
             ...rawStats,
 
-            // Computed Metrics (Getters)
+            // Derived Metrics (Computed from 6 granular buckets)
+            bioVolume: MetricsEngine.instance.bioVolume,
+            synthVolume: MetricsEngine.instance.synthVolume,
+            externalVolume: MetricsEngine.instance.externalVolume,
+            totalLines: MetricsEngine.instance.totalLines,
+
+            // Legacy Computed Metrics
             cyborgRatio: MetricsEngine.instance.cyborgRatio,
             timeRatio: ActivityTracker.instance.timeRatio,
 
@@ -98,7 +104,6 @@ export class DashboardPanel {
             async (message: any) => {
                 switch (message.type) {
                     case "checkUpdates":
-                        Logger.info('Manual Update Check Requested from Webview');
                         UpdateManager.instance.checkForUpdates(true);
                         return;
                     case "refresh":
@@ -106,14 +111,12 @@ export class DashboardPanel {
                         return;
                     case "snooze":
                         const minutes = message.minutes || 30;
-                        Logger.info(`Webview snooze request: ${minutes} minutes`);
                         NotificationManager.instance.snooze(minutes);
                         this.sendUpdate(); // Immediate Push
                         return;
                     case "saveSettings":
                         // Persist settings to VS Code configuration
                         const { bedtime, softNudgeMinutes, autoSnoozeMinutes, dayStartHour, idleTimeoutSeconds } = message.payload || {};
-                        Logger.info(`Saving settings: bedtime=${bedtime}, start=${dayStartHour}, timeout=${idleTimeoutSeconds}`);
                         if (bedtime !== undefined) await ConfigManager.saveBedtime(bedtime);
                         if (softNudgeMinutes !== undefined) await ConfigManager.saveSoftNudgeMinutes(softNudgeMinutes);
                         if (autoSnoozeMinutes !== undefined) await ConfigManager.saveAutoSnoozeMinutes(autoSnoozeMinutes);
@@ -145,10 +148,15 @@ export class DashboardPanel {
                         NotificationManager.instance.triggerHardStop();
                         return;
                     case "debugAddLines":
-                        const { humanLines, aiLines } = message.payload || {};
-                        Logger.info(`Debug: Adding lines: human=${humanLines}, ai=${aiLines}`);
-                        MetricsEngine.instance.debugAddLines(humanLines || 0, aiLines || 0);
-                        this.sendUpdate();
+                        // New: Direct field increment for 6 granular buckets
+                        const { field, amount: lineAmount } = message.payload || {};
+                        if (field && lineAmount) {
+                            Logger.info(`Debug: Adding ${lineAmount} to ${field}`);
+                            StorageManager.instance.updateToday((s: any) => {
+                                s[field] = (s[field] || 0) + lineAmount;
+                            });
+                            this.sendUpdate();
+                        }
                         return;
                     case "debugAddSpecificLines":
                         const { type, amount } = message.payload || {};
@@ -202,7 +210,6 @@ export class DashboardPanel {
             const cssMatch = files.find(f => f.startsWith("index-") && f.endsWith(".css"));
             if (jsMatch) jsFile = jsMatch;
             if (cssMatch) cssFile = cssMatch;
-            Logger.info(`WebviewAssets: JS=${jsFile}, CSS=${cssFile}`);
         } catch (e) {
             Logger.warn(`Could not read assets dir, using fallback filenames: ${e}`);
         }

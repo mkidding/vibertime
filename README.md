@@ -2,7 +2,10 @@
 
 > **Sustainable Vibe Coding for All of Us.**
 
-![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-yellow.svg) ![Version: 0.2.13](https://img.shields.io/badge/Version-0.2.13-purple.svg) [![Reddit](https://img.shields.io/badge/Reddit-r%2Fvibertime-FF4500?logo=reddit)](https://www.reddit.com/r/vibertime/)
+![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-yellow.svg)
+![Data](https://img.shields.io/badge/Data-Local%20Only-green)
+![Version: 0.2.14](https://img.shields.io/badge/Version-0.2.14-purple.svg)
+[![Reddit](https://img.shields.io/badge/Reddit-r%2Fvibertime-FF4500?logo=reddit)](https://www.reddit.com/r/vibertime/)
 
 ![Viber Time Dashboard](https://raw.githubusercontent.com/mkidding/vibertime/main/assets/demo.png)
 ---
@@ -54,6 +57,14 @@ Or run `Viber Time: Show Dashboard` (`Ctrl+Shift+P` / `Cmd+Shift+P`).
 Found a bug? Hit a jackpot on the Slot Machine? Want to share your Vibe Analysis?
 
 👉 **[Join us on r/vibertime](https://www.reddit.com/r/vibertime/)**
+
+## 🔒 Our Privacy & Data Promise
+
+**Viber Time (Community Edition)** is designed to be **Strictly Offline**
+
+* **100% Local:** Viber Time only tracks events but not details. Your stats, code metrics, and sessions are stored strictly on your machine in the global storage.
+
+* **Forever Free:** This Community Edition is and will always be free for individual developers.
 
 ## ⚖️ License
 

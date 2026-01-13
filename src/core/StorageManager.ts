@@ -61,6 +61,7 @@ export class StorageManager {
     private _historyFile: string;
     private _history: History = {};
     private _debounceTimer: NodeJS.Timeout | undefined;
+    private _lastKnownDayKey: string = '';
 
     private constructor(context: vscode.ExtensionContext) {
         // Use globalStorageUri for persistence across sessions/workspaces
@@ -212,12 +213,19 @@ export class StorageManager {
 
     public getToday(): DailyStats {
         const today = this.getTodayKey();
+
+        // Detect Day Boundary Crossing (based on dayStartHour)
+        if (this._lastKnownDayKey && this._lastKnownDayKey !== today) {
+            Logger.info(`StorageManager: Day boundary crossed! (${this._lastKnownDayKey} -> ${today}) Stats and slot machine will auto-reset at dayStartHour=${ConfigManager.dayStartHour}`);
+        }
+        this._lastKnownDayKey = today;
+
         if (!this._history[today]) {
             this._history[today] = this.getEmptyStats(today);
             this.requestSave();
 
             // Hook: New Day Started
-            Logger.info('StorageManager: New Day Started. Triggering Update Check...');
+            Logger.info(`StorageManager: New day started (${today}). All stats and slot machine reset. Triggering Update Check...`);
             setTimeout(() => {
                 const { UpdateManager } = require('./UpdateManager');
                 UpdateManager.instance.checkForUpdates(false);

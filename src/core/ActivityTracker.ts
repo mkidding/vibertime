@@ -168,7 +168,9 @@ export class ActivityTracker {
         // 3. Main Activity Loop (1s Tick) with Smart Gap
         this._trackingInterval = setInterval(() => {
             const msSinceInput = InputListener.timeSinceHumanInput;
-            const isActive = this._isFocused && (msSinceInput < 30000); // 30s Timeout
+            const msSinceReview = InputListener.timeSinceReviewActivity;
+            // User is active if focused AND has had typing OR review activity within 30s
+            const isActive = this._isFocused && (msSinceInput < 30000 || msSinceReview < 30000);
             const now = Date.now();
 
             if (isActive) {

@@ -86,9 +86,9 @@ export class NotificationManager {
         if (isUserPresent && ActivityTracker.instance.wasIdle) {
             // User just returned! Check if we need to ambush them
             if (diffMs <= 0) {
-                // EXPIRED: Show hard stop immediately
+                // EXPIRED: Show hard stop immediately (with "Start New Day" since they're returning)
                 ActivityTracker.instance.clearWasIdle();
-                this.triggerHardStop();
+                this.triggerHardStop(true); // isReturningUser = true
                 return;
             } else if (diffMs <= 5 * 60 * 1000 && !this._softNudgeFired) {
                 // DANGER ZONE (last 5 min): Show soft nudge immediately
@@ -98,17 +98,19 @@ export class NotificationManager {
             // Don't clear wasIdle here - let ActivityTracker handle it on next tick
         }
 
-        // If user is NOT present, skip all automatic notifications
-        if (!isUserPresent) {
-            return; // Empty Chair - don't notify an absent user
-        }
-
-        // Hard Stop (within 1 second of bedtime or overdue)
+        // Hard Stop (within 1 second of bedtime or overdue) - fires regardless of presence!
+        // Context-Aware: Active user gets snooze-only modal, returning user gets "Start New Day" option
         if (diffMs <= -2000 && diffMs > -60000) { // Grace Buffer: Wait 2s past zero.
             if (Math.abs(diffMs + 2000) < 1500) { // Trigger window shifted by 2s
-                this.triggerHardStop();
+                this.triggerHardStop(!isUserPresent); // isReturningUser = !isUserPresent
                 return;
             }
+        }
+
+        // EMPTY CHAIR RULE: Suppress SOFT notifications if user is AFK
+        // (Hard stop already handled above, this only affects soft nudge)
+        if (!isUserPresent) {
+            return; // Empty Chair - don't soft-nudge an absent user
         }
 
         // Soft Nudge
@@ -134,21 +136,33 @@ export class NotificationManager {
 
     private _isHardStopActive = false;
 
-    public triggerHardStop() {
+    /**
+     * Triggers the hard stop modal. 
+     * @param isReturningUser - If true, shows "Start New Day" button (user returned after being idle).
+     *                          If false, shows snooze-only options (user is actively coding late).
+     */
+    public triggerHardStop(isReturningUser: boolean = false) {
         if (this._isHardStopActive) return; // Prevent Stacking
 
         this._isHardStopActive = true;
-        Logger.warn('HARD STOP triggered - Bedtime exceeded!');
+        Logger.warn(`HARD STOP triggered - Bedtime exceeded! (isReturningUser: ${isReturningUser})`);
         const autoSnooze = ConfigManager.autoSnoozeMinutes;
         const targetBedtimeMs = this.getTargetBedtimeTimestamp();
+
+        // Context-Aware Buttons:
+        // - Active late-night coder: Only snooze options (they're still working)
+        // - Returning user (morning after): Include "Start New Day" option
+        const buttons: string[] = [
+            ...(isReturningUser ? ["Start New Day ☀️"] : []),
+            "Snooze 30m",
+            "Snooze 1h",
+            "Snooze 2h"
+        ];
 
         vscode.window.showErrorMessage(
             "🛏️ VIBER TIME: BEDTIME EXCEEDED. GO TO SLEEP!",
             { modal: true },
-            "Start New Day ☀️",
-            "Snooze 30m",
-            "Snooze 1h",
-            "Snooze 2h"
+            ...buttons
         ).then(selection => {
             this._isHardStopActive = false; // Release Lock
 

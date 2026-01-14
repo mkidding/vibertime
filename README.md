@@ -4,7 +4,7 @@
 
 ![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-yellow.svg)
 ![Data](https://img.shields.io/badge/Data-Local%20Only-green)
-![Version: 0.2.15](https://img.shields.io/badge/Version-0.2.15-purple.svg)
+![Version: 0.2.16](https://img.shields.io/badge/Version-0.2.16-purple.svg)
 [![Reddit](https://img.shields.io/badge/Reddit-r%2Fvibertime-FF4500?logo=reddit)](https://www.reddit.com/r/vibertime/)
 
 ![Viber Time Dashboard](https://raw.githubusercontent.com/mkidding/vibertime/main/assets/demo.png)

@@ -1,7 +1,16 @@
 {
   "name": "vibertime",
   "displayName": "Viber Time",
-  "description": "A Cyberpunk-themed Developer Wellness Monitor",
+  "description": "A Cyberpunk-themed Viber Time (Vibe Coder) Productivity and Wellness Monitor",
+  "keywords": [
+    "Viber",
+    "Time",
+    "Vibe",
+    "Coding",
+    "Productivity",
+    "Wellness",
+    "Monitor"
+  ],
   "icon": "icon.png",
   "version": "0.2.16",
   "license": "Apache-2.0",

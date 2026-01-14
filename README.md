@@ -1,4 +1,4 @@
-# Viber Time 🌊
+# ViberTime 🌊
 
 > **Sustainable Vibe Coding for All of Us.**
 
@@ -7,7 +7,7 @@
 ![Version: 0.2.16](https://img.shields.io/badge/Version-0.2.16-purple.svg)
 [![Reddit](https://img.shields.io/badge/Reddit-r%2Fvibertime-FF4500?logo=reddit)](https://www.reddit.com/r/vibertime/)
 
-![Viber Time Dashboard](https://raw.githubusercontent.com/mkidding/vibertime/main/assets/demo.png)
+![ViberTime Dashboard](https://raw.githubusercontent.com/mkidding/vibertime/main/assets/demo.png)
 ---
 
 
@@ -22,7 +22,7 @@ Next thing you know, it's dawn, your eyes are burning, and you're debugging a ra
 
 ## ⚡ The Solution
 
-**Viber Time** is a Retro-Futuristic monitor designed to keep you in the flow state _without_ letting you drown in it.
+**ViberTime** is a Retro-Futuristic monitor designed to keep you in the flow state _without_ letting you drown in it.
 
 ### 🤖 Feature: Accomplishment Analysis
 **See how much you and your AI accomplished together.**
@@ -51,7 +51,7 @@ Sometimes it's magic, sometimes it's hallucinations.
 Click the clock indicator `[ 🕒 00:00 ]` in the **Status Bar** (bottom right) to open the Dashboard instantly.
 
 **Command Palette**:
-Or run `Viber Time: Show Dashboard` (`Ctrl+Shift+P` / `Cmd+Shift+P`).
+Or run `ViberTime: Show Dashboard` (`Ctrl+Shift+P` / `Cmd+Shift+P`).
 
 ## 🤝 Join the Vibe
 Found a bug? Hit a jackpot on the Slot Machine? Want to share your Vibe Analysis?
@@ -60,9 +60,9 @@ Found a bug? Hit a jackpot on the Slot Machine? Want to share your Vibe Analysis
 
 ## 🔒 Our Privacy & Data Promise
 
-**Viber Time (Community Edition)** is designed to be **Strictly Offline**
+**ViberTime (Community Edition)** is designed to be **Strictly Offline**
 
-* **100% Local:** Viber Time only tracks events but not details. Your stats, code metrics, and sessions are stored strictly on your machine in the global storage.
+* **100% Local:** ViberTime only tracks events but not details. Your stats, code metrics, and sessions are stored strictly on your machine in the global storage.
 
 * **Forever Free:** This Community Edition is and will always be free for individual developers.
 

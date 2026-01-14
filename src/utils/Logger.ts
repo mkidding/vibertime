@@ -5,7 +5,7 @@ let outputChannel: vscode.OutputChannel | undefined;
 export const Logger = {
     init(): void {
         if (!outputChannel) {
-            outputChannel = vscode.window.createOutputChannel("Viber Time");
+            outputChannel = vscode.window.createOutputChannel("ViberTime");
         }
     },
 

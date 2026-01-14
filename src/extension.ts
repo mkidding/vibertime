@@ -14,7 +14,7 @@ let statusBarItem: vscode.StatusBarItem;
 
 export function activate(context: vscode.ExtensionContext) {
     Logger.init();
-    Logger.info('Viber Time: Activating...');
+    Logger.info('ViberTime: Activating...');
 
     try {
         // Initialize Singletons with context for persistence
@@ -79,7 +79,7 @@ export function activate(context: vscode.ExtensionContext) {
             }
 
             statusBarItem.text = `${icon} [${timeStr}]`;
-            statusBarItem.tooltip = "Viber Time: Click to open Dashboard";
+            statusBarItem.tooltip = "ViberTime: Click to open Dashboard";
             statusBarItem.backgroundColor = backgroundColor;
         }, 1000);
 
@@ -184,13 +184,13 @@ export function activate(context: vscode.ExtensionContext) {
         context.subscriptions.push({ dispose: () => notificationManager.dispose() });
         context.subscriptions.push({ dispose: () => Logger.dispose() });
 
-        Logger.info('Viber Time: Startup Complete. Status Bar visible.');
+        Logger.info('ViberTime: Startup Complete. Status Bar visible.');
     } catch (e) {
         Logger.error('FATAL ERROR during activation', e);
-        vscode.window.showErrorMessage(`Viber Time Failed to Activate: ${e}`);
+        vscode.window.showErrorMessage(`ViberTime Failed to Activate: ${e}`);
     }
 }
 
 export function deactivate() {
-    Logger.info('Viber Time: Deactivating...');
+    Logger.info('ViberTime: Deactivating...');
 }

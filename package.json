@@ -1,7 +1,7 @@
 {
   "name": "vibertime",
-  "displayName": "Viber Time",
-  "description": "A Cyberpunk-themed Viber Time (Vibe Coder) Productivity and Wellness Monitor",
+  "displayName": "ViberTime",
+  "description": "A Cyberpunk-themed ViberTime (Vibe Coder) Productivity and Wellness Monitor",
   "keywords": [
     "Viber",
     "Time",
@@ -33,11 +33,11 @@
     "commands": [
       {
         "command": "vibertime.showDashboard",
-        "title": "Viber Time: Show Dashboard"
+        "title": "ViberTime: Show Dashboard"
       }
     ],
     "configuration": {
-      "title": "Viber Time",
+      "title": "ViberTime",
       "properties": {
         "vibertime.bedtime": {
           "type": "string",

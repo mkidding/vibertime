@@ -444,7 +444,7 @@ export const Dashboard: React.FC<DashboardProps> = (props) => {
                         </div>
                         <div>
                             <h1 className="text-4xl font-mono tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 drop-shadow-[0_0_10px_rgba(192,38,211,0.5)]">
-                                VIBER TIME
+                                VIBERTIME
                             </h1>
                         </div>
                     </div>

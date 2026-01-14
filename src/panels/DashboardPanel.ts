@@ -38,7 +38,7 @@ export class DashboardPanel {
         } else {
             const panel = window.createWebviewPanel(
                 "vibertime-dashboard",
-                "Viber Time",
+                "ViberTime",
                 ViewColumn.One,
                 {
                     enableScripts: true,
@@ -231,7 +231,7 @@ export class DashboardPanel {
           <meta http-equiv="Expires" content="0" />
           <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
           <link rel="stylesheet" type="text/css" href="${stylesUri}" />
-          <title>Viber Time</title>
+          <title>ViberTime</title>
         </head>
         <body>
           <div id="root"></div>

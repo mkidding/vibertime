@@ -61,7 +61,7 @@ export class UpdateManager {
 
                 // 5. Notify User
                 const action = await vscode.window.showInformationMessage(
-                    `Viber Time v${remoteVersion} is available!`,
+                    `ViberTime v${remoteVersion} is available!`,
                     'Download Update'
                 );
 
@@ -75,7 +75,7 @@ export class UpdateManager {
             } else {
                 // No Update
                 if (isManual) {
-                    vscode.window.showInformationMessage(`Viber Time is up to date (v${localVersion}).`);
+                    vscode.window.showInformationMessage(`ViberTime is up to date (v${localVersion}).`);
                 }
             }
 

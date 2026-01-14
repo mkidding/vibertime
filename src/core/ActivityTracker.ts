@@ -154,7 +154,7 @@ export class ActivityTracker {
                                         s.humanReviewSeconds += secondsAdded; // Smart Gap field
                                         s.reviewingSeconds += secondsAdded; // Legacy
                                     });
-                                    vscode.window.setStatusBarMessage(`$(pulse) Viber Time: Detected AI Wait (+${secondsAdded}s)`, 3000);
+                                    vscode.window.setStatusBarMessage(`$(pulse) ViberTime: Detected AI Wait (+${secondsAdded}s)`, 3000);
                                 }
                             }
                             this._zombieStartTimestamp = null; // Reset after revival

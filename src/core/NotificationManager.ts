@@ -24,7 +24,7 @@ export class NotificationManager {
 
     public snooze(minutes: number) {
         this._snoozedUntil = this.now().getTime() + (minutes * 60000);
-        vscode.window.showInformationMessage(`Viber Time: Snoozed for ${minutes} minutes.`);
+        vscode.window.showInformationMessage(`ViberTime: Snoozed for ${minutes} minutes.`);
     }
 
     public isSnoozed(): boolean {
@@ -93,7 +93,7 @@ export class NotificationManager {
             } else if (diffMs <= 5 * 60 * 1000 && !this._softNudgeFired) {
                 // DANGER ZONE (last 5 min): Show soft nudge immediately
                 this._softNudgeFired = true;
-                vscode.window.showWarningMessage(`⚠️ Viber Time: You're in the Danger Zone! Less than 5 minutes until Bedtime!`);
+                vscode.window.showWarningMessage(`⚠️ ViberTime: You're in the Danger Zone! Less than 5 minutes until Bedtime!`);
             }
             // Don't clear wasIdle here - let ActivityTracker handle it on next tick
         }
@@ -119,7 +119,7 @@ export class NotificationManager {
         if (Math.abs(diffMs - nudgeMs) < 1500 && !this._softNudgeFired) {
             this._softNudgeFired = true;
             Logger.warn(`Soft nudge triggered: ${nudgeMinutes} minutes until bedtime`);
-            vscode.window.showWarningMessage(`⚠️ Viber Time: ${nudgeMinutes} minutes until Bedtime!`);
+            vscode.window.showWarningMessage(`⚠️ ViberTime: ${nudgeMinutes} minutes until Bedtime!`);
         }
 
         // Reset soft nudge flag
@@ -131,7 +131,7 @@ export class NotificationManager {
     public triggerSoftNudge() {
         Logger.warn('Soft nudge manually triggered from debug panel');
         const nudgeMinutes = ConfigManager.softNudgeMinutes;
-        vscode.window.showWarningMessage(`⚠️ Viber Time: ${nudgeMinutes} minutes until Bedtime!`);
+        vscode.window.showWarningMessage(`⚠️ ViberTime: ${nudgeMinutes} minutes until Bedtime!`);
     }
 
     private _isHardStopActive = false;
@@ -160,7 +160,7 @@ export class NotificationManager {
         ];
 
         vscode.window.showErrorMessage(
-            "🛏️ VIBER TIME: BEDTIME EXCEEDED. GO TO SLEEP!",
+            "🛏️ VIBERTIME: BEDTIME EXCEEDED. GO TO SLEEP!",
             { modal: true },
             ...buttons
         ).then(selection => {

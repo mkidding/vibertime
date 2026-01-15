@@ -3,6 +3,7 @@ import { Logger } from '../utils/Logger';
 import { InputListener } from './InputListener';
 import { ConfigManager } from '../config/ConfigManager';
 import { StorageManager } from './StorageManager';
+import { MetricsEngine } from './MetricsEngine';
 
 export class ActivityTracker {
     private static _instance: ActivityTracker;
@@ -326,6 +327,11 @@ export class ActivityTracker {
                 bestAnalysis: null
             };
         });
+
+        // STORM SHIELD: Protect the new day from immediate wake-up events
+        // (git fetch, auto-formatters, etc. running immediately after wake)
+        MetricsEngine.instance.ignoreUpdates(5000);
+
         Logger.info('ActivityTracker: Full daily reset complete (stats + slot machine).');
     }
 

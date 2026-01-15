@@ -13,6 +13,9 @@ export class MetricsEngine {
     private static readonly BURST_WINDOW_MS = 500;
     private static readonly BURST_THRESHOLD_CPS = 50;
 
+    // Storm Shield State
+    private _ignoreUpdatesUntil: number = 0;
+
     // Selection state for "Smart Delete"
     private _previousSelection: vscode.Range | null = null;
     private _disposables: vscode.Disposable[] = [];
@@ -153,6 +156,14 @@ export class MetricsEngine {
                     return;
                 }
                 if (e.contentChanges.length === 0) return;
+
+                // =========================================
+                // FILTER -1: STORM SHIELD (Grace Period)
+                // =========================================
+                if (Date.now() < this._ignoreUpdatesUntil) {
+                    Logger.info('MetricsEngine: Ignoring update (Storm Shield active)');
+                    return;
+                }
 
                 // =========================================
                 // FILTER 0: Skip non-file documents (Output, Debug Console, etc.)
@@ -365,6 +376,11 @@ export class MetricsEngine {
             // They share the same `DailyStats` object now.
             // Let's reset purely metrics fields here to be safe.
         });
+    }
+
+    public ignoreUpdates(durationMs: number) {
+        this._ignoreUpdatesUntil = Date.now() + durationMs;
+        Logger.info(`MetricsEngine: Storm Shield activated for ${durationMs}ms`);
     }
 
     public dispose() {

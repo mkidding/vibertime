@@ -1,15 +1,28 @@
 {
   "name": "vibertime",
-  "displayName": "ViberTime",
-  "description": "A Cyberpunk-themed ViberTime (Vibe Coder) Productivity and Wellness Monitor",
+  "displayName": "ViberTime Local",
+  "description": "Offline-first time tracker for developers. Visualize your flow state, prevent burnout, and track coding stats without sending data to the cloud.",
   "keywords": [
-    "Viber",
-    "Time",
-    "Vibe",
-    "Coding",
-    "Productivity",
-    "Wellness",
-    "Monitor"
+    "productivity",
+    "vibe coding",
+    "vibe coder",
+    "health",
+    "wellness",
+    "developer health",
+    "burnout",
+    "stats",
+    "metrics",
+    "coding stats",
+    "AI stats",
+    "flow state",
+    "dashboard",
+    "analytics",
+    "time tracker",
+    "wakatime",
+    "codetime",
+    "code time",
+    "local",
+    "pomodoro"
   ],
   "icon": "icon.png",
   "version": "0.2.18",
@@ -23,6 +36,8 @@
     "vscode": "^1.80.0"
   },
   "categories": [
+    "Education",
+    "Visualization",
     "Other"
   ],
   "activationEvents": [

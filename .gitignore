@@ -8,6 +8,7 @@ slot_reference/
 # --- Documentation Logic ---
 *.md
 !README.md
+!CONTRIBUTING.md
 !LICENSE
 !LICENSE.txt
 !CHANGELOG.md
